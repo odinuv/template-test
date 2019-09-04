@@ -1,0 +1,37 @@
+name: Deploy
+
+on:
+  push:
+    tags:
+      - '[0-9]*.[0-9]*.[0-9]*'
+
+jobs:
+  deploy:
+    name: Deploy Application
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v1
+
+    - name: Build image
+      run: docker build -t actions-test .
+
+    - name: Push image
+      uses: odinuv/action-push-to-ecr@master
+      with:
+        vendor: ${{ secrets.vendor }}
+        app_id: ${{ secrets.app_id }}
+        username: ${{ secrets.developer_portal_user }}
+        password: ${{ secrets.developer_portal_password }}
+        tag: ${{ github.ref }}
+        push_latest: true
+        source_image: actions-test
+
+    - name: Deploy to production
+      uses: keboola/action-set-tag-developer-portal@master
+      with:
+        vendor: ${{ secrets.vendor }}
+        app_id: ${{ secrets.app_id }}
+        username: ${{ secrets.developer_portal_user }}
+        password: ${{ secrets.developer_portal_password }}
+        tag: ${{ github.ref }}

@@ -1,0 +1,38 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v1
+
+    - name: Build Image
+      run: docker build -t app-image .
+
+    - name: Run Tests
+      run: docker run app-image composer ci
+      
+    - name: Push Test Image
+      uses: odinuv/action-push-to-ecr@master
+      with:
+        vendor: ${{ secrets.vendor }}
+        app_id: ${{ secrets.app_id }}
+        username: ${{ secrets.developer_portal_user }}
+        password: ${{ secrets.developer_portal_password }}
+        tag: test
+        source_image: app-image
+
+    - name: Run Test Image in KBC
+      uses: keboola/action-run-job@master
+      with:
+        app_id: keboola-test.app-acme-anvil-service
+        tag: test
+        config_id: ${{ secrets.config_id }}
+        storage_token: ${{ secrets.storage_token }}
